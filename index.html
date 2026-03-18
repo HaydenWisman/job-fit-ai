@@ -4,17 +4,24 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Job Fit AI Robot</title>
+
+  <!-- PDF.js for PDF resume reading -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+
   <style>
     :root {
       --bg: #0f172a;
-      --panel: #111827;
-      --card: #1f2937;
+      --panel: rgba(15, 23, 42, 0.88);
+      --card: rgba(17, 24, 39, 0.95);
+      --card-2: #0b1220;
       --text: #e5e7eb;
       --muted: #94a3b8;
       --accent: #22c55e;
+      --accent-2: #38bdf8;
       --warn: #f59e0b;
       --danger: #ef4444;
       --border: #334155;
+      --shadow: 0 18px 40px rgba(0, 0, 0, 0.28);
     }
 
     * { box-sizing: border-box; }
@@ -22,40 +29,85 @@
     body {
       margin: 0;
       font-family: Arial, Helvetica, sans-serif;
-      background: linear-gradient(135deg, #0f172a, #111827 60%, #1e293b);
+      background: radial-gradient(circle at top, #16233d 0%, #0f172a 38%, #09111f 100%);
       color: var(--text);
       min-height: 100vh;
       padding: 24px;
     }
 
     .container {
-      max-width: 1200px;
+      max-width: 1280px;
       margin: 0 auto;
     }
 
+    .hero {
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 18px;
+      margin-bottom: 20px;
+    }
+
+    .hero-card, .card {
+      background: var(--panel);
+      border: 1px solid rgba(148, 163, 184, 0.18);
+      border-radius: 22px;
+      padding: 22px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(8px);
+    }
+
     h1 {
-      margin: 0 0 8px;
-      font-size: 2rem;
+      margin: 0 0 10px;
+      font-size: 2.2rem;
+      line-height: 1.15;
+    }
+
+    h2 {
+      margin-top: 0;
+      margin-bottom: 16px;
+      font-size: 1.25rem;
+    }
+
+    h3, h4 {
+      margin-bottom: 10px;
     }
 
     .subtitle {
       color: var(--muted);
-      margin-bottom: 24px;
-      line-height: 1.5;
+      margin: 0;
+      line-height: 1.6;
+    }
+
+    .hero-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .mini-stat {
+      background: rgba(11, 18, 32, 0.9);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 14px;
+    }
+
+    .mini-stat strong {
+      display: block;
+      font-size: 1.25rem;
+      margin-bottom: 4px;
+    }
+
+    .mini-stat span {
+      color: var(--muted);
+      font-size: 13px;
     }
 
     .grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 20px;
-    }
-
-    .card {
-      background: rgba(17, 24, 39, 0.9);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 20px;
-      box-shadow: 0 12px 30px rgba(0,0,0,0.25);
+      margin-bottom: 20px;
     }
 
     label {
@@ -69,7 +121,7 @@
       background: #0b1220;
       color: var(--text);
       border: 1px solid var(--border);
-      border-radius: 10px;
+      border-radius: 12px;
       padding: 12px;
       margin-bottom: 16px;
       font-size: 14px;
@@ -80,78 +132,241 @@
       resize: vertical;
     }
 
+    .button-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
     button {
-      background: var(--accent);
+      background: linear-gradient(135deg, var(--accent), #4ade80);
       color: #052e16;
       border: none;
       padding: 12px 18px;
-      border-radius: 10px;
+      border-radius: 12px;
       font-size: 15px;
       font-weight: bold;
       cursor: pointer;
-      margin-right: 10px;
+      box-shadow: 0 10px 18px rgba(34, 197, 94, 0.18);
     }
 
     button.secondary {
       background: #334155;
       color: var(--text);
+      box-shadow: none;
+    }
+
+    button.tertiary {
+      background: #1d4ed8;
+      color: white;
+      box-shadow: none;
+    }
+
+    .small {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .file-chip {
+      display: none;
+      background: rgba(56, 189, 248, 0.12);
+      color: #bae6fd;
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      border-radius: 999px;
+      padding: 8px 12px;
+      font-size: 13px;
+      margin-bottom: 14px;
+      width: fit-content;
+    }
+
+    .result-shell {
+      display: grid;
+      grid-template-columns: 0.9fr 1.1fr;
+      gap: 20px;
+      align-items: start;
     }
 
     .result-box {
-      margin-top: 16px;
-      padding: 16px;
-      border-radius: 12px;
+      padding: 18px;
+      border-radius: 18px;
       border: 1px solid var(--border);
-      background: #0b1220;
+      background: var(--card-2);
+      min-height: 220px;
     }
 
     .score {
-      font-size: 2rem;
+      font-size: 2.4rem;
       font-weight: bold;
-      margin: 8px 0;
+      margin: 8px 0 4px;
     }
 
     .approved { color: var(--accent); }
     .review { color: var(--warn); }
     .denied { color: var(--danger); }
 
-    ul {
-      padding-left: 18px;
-      line-height: 1.6;
-    }
-
     .pill {
       display: inline-block;
-      padding: 6px 10px;
+      padding: 7px 11px;
       border-radius: 999px;
       font-size: 12px;
       font-weight: bold;
       margin-bottom: 8px;
+      letter-spacing: 0.3px;
     }
 
-    .pill.approved { background: rgba(34,197,94,0.15); }
-    .pill.review { background: rgba(245,158,11,0.15); }
-    .pill.denied { background: rgba(239,68,68,0.15); }
+    .pill.approved { background: rgba(34, 197, 94, 0.15); }
+    .pill.review { background: rgba(245, 158, 11, 0.15); }
+    .pill.denied { background: rgba(239, 68, 68, 0.15); }
 
-    .small {
+    .meter {
+      width: 100%;
+      height: 12px;
+      border-radius: 999px;
+      background: #182234;
+      overflow: hidden;
+      border: 1px solid #263246;
+      margin: 14px 0 18px;
+    }
+
+    .meter-fill {
+      height: 100%;
+      width: 0;
+      background: linear-gradient(90deg, #ef4444, #f59e0b 45%, #22c55e 80%);
+      transition: width 0.4s ease;
+    }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+
+    .metric {
+      background: rgba(15, 23, 42, 0.92);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 14px;
+    }
+
+    .metric .label {
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 6px;
+    }
+
+    .metric .value {
+      font-size: 1.1rem;
+      font-weight: bold;
+    }
+
+    .lists-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-top: 14px;
+    }
+
+    .list-card {
+      background: rgba(15, 23, 42, 0.92);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 16px;
+    }
+
+    .tag-wrap {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .tag {
+      display: inline-block;
+      padding: 8px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      background: #172133;
+      border: 1px solid #29374d;
+    }
+
+    .tag.good {
+      color: #bbf7d0;
+      background: rgba(34, 197, 94, 0.12);
+      border-color: rgba(34, 197, 94, 0.22);
+    }
+
+    .tag.missing {
+      color: #fecaca;
+      background: rgba(239, 68, 68, 0.12);
+      border-color: rgba(239, 68, 68, 0.2);
+    }
+
+    ul {
+      padding-left: 18px;
+      line-height: 1.6;
+      margin-top: 8px;
+    }
+
+    .footer-note {
+      margin-top: 18px;
       color: var(--muted);
       font-size: 13px;
-      line-height: 1.5;
+      line-height: 1.6;
     }
 
-    @media (max-width: 900px) {
-      .grid { grid-template-columns: 1fr; }
+    @media (max-width: 1050px) {
+      .hero,
+      .grid,
+      .result-shell,
+      .lists-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .hero-stats,
+      .metrics {
+        grid-template-columns: 1fr;
+      }
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>Job Fit AI Robot</h1>
-    <p class="subtitle">
-      This HTML tool compares a candidate profile against a job description, estimates a match percentage,
-      and auto-denies applications below 40% with reasons. It is a rules-based scoring engine, which is a safer
-      and more transparent starting point than pretending it is a true hiring AI model.
-    </p>
+    <section class="hero">
+      <div class="hero-card">
+        <h1>Job Fit AI Robot</h1>
+        <p class="subtitle">
+          Compare a resume against a job posting, estimate match strength, flag missing qualifications,
+          and generate practical improvement suggestions. This version adds resume upload, better scoring visibility,
+          and clearer reasons behind each recommendation.
+        </p>
+        <div class="hero-stats">
+          <div class="mini-stat">
+            <strong>Resume Upload</strong>
+            <span>Supports .txt and .pdf files</span>
+          </div>
+          <div class="mini-stat">
+            <strong>Auto Decision</strong>
+            <span>Reject, review, or strong match</span>
+          </div>
+          <div class="mini-stat">
+            <strong>AI-Style Feedback</strong>
+            <span>Explains gaps and resume improvements</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="hero-card">
+        <h2>How this version improved</h2>
+        <ul>
+          <li>Uploads and reads resume files directly into the analyzer.</li>
+          <li>Shows keyword match, requirement coverage, and experience strength.</li>
+          <li>Creates specific resume improvement suggestions.</li>
+          <li>Gives a cleaner recruiter-style dashboard for presentations.</li>
+        </ul>
+        <p class="small">This is still a rules-based prototype. It is meant to be transparent and explainable, not a real hiring decision engine.</p>
+      </div>
+    </section>
 
     <div class="grid">
       <div class="card">
@@ -177,26 +392,105 @@
         <label for="candidateName">Candidate Name</label>
         <input id="candidateName" type="text" placeholder="Example: Hayden Wisman" />
 
+        <label for="resumeUpload">Upload Resume (.txt or .pdf)</label>
+        <input id="resumeUpload" type="file" accept=".txt,.pdf" />
+        <div id="fileChip" class="file-chip"></div>
+
         <label for="candidateProfile">Candidate Skills / Resume Summary</label>
-        <textarea id="candidateProfile" placeholder="Paste resume text, skill summary, or experience here...&#10;&#10;Example:&#10;- 10 years security management experience&#10;- Lenel access control&#10;- Avigilon CCTV&#10;- Excel reporting&#10;- Team leadership"></textarea>
+        <textarea id="candidateProfile" placeholder="Paste resume text, skill summary, or experience here..."></textarea>
 
         <label for="priorityKeywords">Priority Keywords (comma-separated)</label>
         <input id="priorityKeywords" type="text" placeholder="Example: leadership, lenel, incident response, excel" />
 
-        <button onclick="analyzeFit()">Analyze Application</button>
-        <button class="secondary" onclick="loadDemo()">Load Demo</button>
+        <div class="button-row">
+          <button onclick="analyzeFit()">Analyze Application</button>
+          <button class="secondary" onclick="loadDemo()">Load Demo</button>
+          <button class="tertiary" onclick="clearAllFields()">Clear</button>
+        </div>
       </div>
     </div>
 
-    <div class="card" style="margin-top:20px;">
+    <div class="card">
       <h2>Decision Output</h2>
-      <div id="results" class="result-box">
-        <p class="small">Run the analysis to see the score, decision, matched skills, missing qualifications, and reasoning.</p>
+      <div class="result-shell">
+        <div id="summaryPanel" class="result-box">
+          <p class="small">Run the analysis to see the score, decision, and component breakdown.</p>
+        </div>
+        <div id="detailsPanel" class="result-box">
+          <p class="small">Matched skills, missing qualifications, and resume improvement suggestions will appear here.</p>
+        </div>
       </div>
+      <p class="footer-note">
+        Important: this is a transparent prototype. Real hiring decisions also depend on interviews, competition,
+        internal candidates, salary range, referrals, location, timing, communication style, and other factors not visible in text.
+      </p>
     </div>
   </div>
 
   <script>
+    if (window.pdfjsLib) {
+      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    }
+
+    const resumeUpload = document.getElementById('resumeUpload');
+    const candidateProfileField = document.getElementById('candidateProfile');
+    const fileChip = document.getElementById('fileChip');
+
+    resumeUpload.addEventListener('change', handleResumeUpload);
+
+    function showFileChip(text) {
+      fileChip.style.display = 'inline-block';
+      fileChip.textContent = text;
+    }
+
+    function hideFileChip() {
+      fileChip.style.display = 'none';
+      fileChip.textContent = '';
+    }
+
+    async function handleResumeUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const fileName = file.name.toLowerCase();
+      const summaryPanel = document.getElementById('summaryPanel');
+
+      try {
+        if (fileName.endsWith('.txt')) {
+          const text = await file.text();
+          candidateProfileField.value = text;
+          showFileChip('Loaded TXT: ' + file.name);
+          summaryPanel.innerHTML = '<p class="approved"><strong>Resume uploaded successfully.</strong></p><p class="small">Your text resume is ready for analysis.</p>';
+          return;
+        }
+
+        if (fileName.endsWith('.pdf')) {
+          const arrayBuffer = await file.arrayBuffer();
+          const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+          let combinedText = '';
+
+          for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+            const page = await pdf.getPage(pageNum);
+            const textContent = await page.getTextContent();
+            const pageText = textContent.items.map(item => item.str).join(' ');
+            combinedText += pageText + '\n';
+          }
+
+          candidateProfileField.value = combinedText.trim();
+          showFileChip('Loaded PDF: ' + file.name);
+          summaryPanel.innerHTML = '<p class="approved"><strong>PDF resume uploaded successfully.</strong></p><p class="small">The PDF text was extracted and loaded into the analyzer.</p>';
+          return;
+        }
+
+        summaryPanel.innerHTML = '<p class="review"><strong>Unsupported file type.</strong></p><p class="small">Please upload a .txt or .pdf resume.</p>';
+        hideFileChip();
+      } catch (error) {
+        console.error(error);
+        summaryPanel.innerHTML = '<p class="denied"><strong>Could not process the uploaded resume.</strong></p><p class="small">Try a different PDF, use a text file, or paste your resume manually.</p>';
+        hideFileChip();
+      }
+    }
+
     function normalizeText(text) {
       return text
         .toLowerCase()
@@ -205,8 +499,8 @@
         .trim();
     }
 
-    function extractRequirementLines(jobDescription) {
-      return jobDescription
+    function splitIntoLines(text) {
+      return text
         .split(/\n|\.|;/)
         .map(line => line.trim())
         .filter(line => line.length > 3);
@@ -214,7 +508,7 @@
 
     function extractKeywords(text) {
       const stopWords = new Set([
-        'the','and','for','with','that','this','from','have','will','your','you','our','are','all','not','but','job','role','must','can','able','into','about','more','less','than','year','years','experience','work','working','required','preferred','plus','using','use','strong','skills','skill','knowledge','ability','team','including','related','responsible','minimum'
+        'the','and','for','with','that','this','from','have','will','your','you','our','are','all','not','but','job','role','must','can','able','into','about','more','less','than','year','years','experience','work','working','required','preferred','plus','using','use','strong','skills','skill','knowledge','ability','team','including','related','responsible','minimum','candidate','position','application','resume'
       ]);
 
       const words = normalizeText(text).split(' ');
@@ -228,7 +522,7 @@
 
       return Object.entries(freq)
         .sort((a, b) => b[1] - a[1])
-        .slice(0, 30)
+        .slice(0, 35)
         .map(entry => entry[0]);
     }
 
@@ -252,8 +546,18 @@
       const jobYears = [...jobDescription.matchAll(/(\d+)\+?\s*years?/gi)].map(m => parseInt(m[1], 10));
       const candidateYears = [...candidateProfile.matchAll(/(\d+)\+?\s*years?/gi)].map(m => parseInt(m[1], 10));
 
-      if (!jobYears.length) return { score: 1, note: 'No explicit years requirement found.' };
-      if (!candidateYears.length) return { score: 0, note: 'Candidate profile does not clearly show years of experience.' };
+      if (!jobYears.length) {
+        return { score: 1, note: 'No explicit years requirement found.', required: null, actual: null };
+      }
+
+      if (!candidateYears.length) {
+        return {
+          score: 0,
+          note: 'Candidate profile does not clearly show years of experience.',
+          required: Math.max(...jobYears),
+          actual: 0
+        };
+      }
 
       const required = Math.max(...jobYears);
       const actual = Math.max(...candidateYears);
@@ -261,8 +565,49 @@
 
       return {
         score: ratio,
-        note: `Required years: ${required}. Candidate years found: ${actual}.`
+        note: `Required years: ${required}. Candidate years found: ${actual}.`,
+        required,
+        actual
       };
+    }
+
+    function classifyDecision(finalScore, threshold) {
+      if (finalScore >= 70) return { label: 'STRONG MATCH', className: 'approved' };
+      if (finalScore >= threshold) return { label: 'REVIEW MANUALLY', className: 'review' };
+      return { label: 'AUTO-DENY', className: 'denied' };
+    }
+
+    function makeSuggestions(missing, matched, yearsMatch, candidateProfile, jobTitle) {
+      const suggestions = [];
+
+      if (missing.length) {
+        suggestions.push('Add clearer evidence for these missing or weak areas: ' + missing.slice(0, 6).join(', ') + '.');
+      }
+
+      if (yearsMatch.required && yearsMatch.actual < yearsMatch.required) {
+        suggestions.push(`This role appears to want ${yearsMatch.required}+ years. Highlight your most relevant experience more clearly, especially leadership, scope, and measurable results.`);
+      }
+
+      if (!/(led|managed|supervised|directed|trained|oversaw)/i.test(candidateProfile)) {
+        suggestions.push('Add action verbs like led, managed, supervised, trained, or directed to strengthen leadership language.');
+      }
+
+      if (!/(improved|reduced|increased|saved|achieved|delivered|built|implemented)/i.test(candidateProfile)) {
+        suggestions.push('Add measurable impact statements such as improved, reduced, increased, achieved, or implemented to show results.');
+      }
+
+      if (matched.length < 5) {
+        suggestions.push('Tailor the resume more closely to the exact wording of the job posting before applying.');
+      }
+
+      suggestions.push(`Create a customized version of your resume specifically for the ${jobTitle || 'target role'} instead of using a general resume.`);
+
+      return [...new Set(suggestions)].slice(0, 6);
+    }
+
+    function renderTags(items, kind) {
+      if (!items.length) return '<p class="small">None detected.</p>';
+      return `<div class="tag-wrap">${items.map(item => `<span class="tag ${kind}">${item}</span>`).join('')}</div>`;
     }
 
     function analyzeFit() {
@@ -272,16 +617,18 @@
       const candidateProfile = document.getElementById('candidateProfile').value.trim();
       const priorityKeywords = document.getElementById('priorityKeywords').value.trim();
       const threshold = Number(document.getElementById('minThreshold').value);
-      const results = document.getElementById('results');
+      const summaryPanel = document.getElementById('summaryPanel');
+      const detailsPanel = document.getElementById('detailsPanel');
 
       if (!jobDescription || !candidateProfile) {
-        results.innerHTML = '<p class="denied"><strong>Please paste both a job description and candidate profile.</strong></p>';
+        summaryPanel.innerHTML = '<p class="denied"><strong>Please provide both a job description and candidate profile.</strong></p>';
+        detailsPanel.innerHTML = '<p class="small">Paste the job posting and resume text, or upload a resume file first.</p>';
         return;
       }
 
       const normalizedCandidate = normalizeText(candidateProfile);
       const jobKeywords = buildJobKeywords(jobDescription, priorityKeywords);
-      const requirementLines = extractRequirementLines(jobDescription);
+      const requirementLines = splitIntoLines(jobDescription);
       const yearsMatch = estimateYearsMatch(jobDescription, candidateProfile);
 
       const matched = [];
@@ -289,9 +636,10 @@
       let keywordScore = 0;
 
       jobKeywords.forEach(keyword => {
+        const weighted = priorityKeywords.toLowerCase().includes(keyword) ? 2 : 1;
         if (keywordExists(keyword, normalizedCandidate)) {
           matched.push(keyword);
-          keywordScore += priorityKeywords.toLowerCase().includes(keyword) ? 2 : 1;
+          keywordScore += weighted;
         } else {
           missing.push(keyword);
         }
@@ -302,73 +650,81 @@
       }, 0) || 1;
 
       const normalizedKeywordScore = keywordScore / maxKeywordScore;
+
       const lineMatches = requirementLines.filter(line => {
         const lineWords = extractKeywords(line).slice(0, 5);
         return lineWords.some(word => keywordExists(word, normalizedCandidate));
       }).length;
+
       const requirementCoverage = requirementLines.length ? lineMatches / requirementLines.length : 0;
-
       const finalScore = Math.round(((normalizedKeywordScore * 0.55) + (requirementCoverage * 0.20) + (yearsMatch.score * 0.25)) * 100);
+      const decision = classifyDecision(finalScore, threshold);
+      const suggestions = makeSuggestions(missing, matched, yearsMatch, candidateProfile, jobTitle);
 
-      let decision = 'AUTO-DENY';
-      let decisionClass = 'denied';
-      let reasoning = [];
+      const keywordPercent = Math.round(normalizedKeywordScore * 100);
+      const coveragePercent = Math.round(requirementCoverage * 100);
+      const yearsPercent = Math.round(yearsMatch.score * 100);
 
-      if (finalScore >= 70) {
-        decision = 'STRONG MATCH';
-        decisionClass = 'approved';
-        reasoning.push('The profile aligns well with the job requirements and priority keywords.');
-      } else if (finalScore >= threshold) {
-        decision = 'REVIEW MANUALLY';
-        decisionClass = 'review';
-        reasoning.push('The candidate meets enough qualifications to justify human review.');
-      } else {
-        decision = 'AUTO-DENY';
-        decisionClass = 'denied';
-        reasoning.push(`The application scored below the ${threshold}% threshold.`);
-      }
+      const reasoning = [];
+      reasoning.push(
+        decision.label === 'AUTO-DENY'
+          ? `The application scored below the ${threshold}% threshold.`
+          : decision.label === 'REVIEW MANUALLY'
+            ? 'The profile clears the minimum threshold, but still has noticeable gaps.'
+            : 'The profile aligns strongly with the job requirements and keywords.'
+      );
 
-      if (matched.length) {
-        reasoning.push(`Matched ${matched.length} job keyword(s): ${matched.slice(0, 10).join(', ')}${matched.length > 10 ? '...' : ''}.`);
-      }
-
-      if (missing.length) {
-        reasoning.push(`Missing or unclear qualifications: ${missing.slice(0, 10).join(', ')}${missing.length > 10 ? '...' : ''}.`);
-      }
-
+      if (matched.length) reasoning.push(`Matched ${matched.length} keyword(s).`);
+      if (missing.length) reasoning.push(`Missing or weak coverage in ${missing.length} keyword(s).`);
       reasoning.push(yearsMatch.note);
-      reasoning.push(`Requirement coverage estimate: ${Math.round(requirementCoverage * 100)}%.`);
+      reasoning.push(`Requirement coverage estimate: ${coveragePercent}%.`);
 
-      const nextStep = finalScore < threshold
-        ? 'Recommendation: do not apply yet. Improve resume alignment, add missing skills, or target a closer-fit role.'
-        : 'Recommendation: proceed with the application and tailor the resume to the matched keywords.';
-
-      results.innerHTML = `
-        <span class="pill ${decisionClass}">${decision}</span>
+      summaryPanel.innerHTML = `
+        <span class="pill ${decision.className}">${decision.label}</span>
         <h3>${candidateName}${jobTitle ? ' vs. ' + jobTitle : ''}</h3>
-        <div class="score ${decisionClass}">${finalScore}% Match Probability</div>
-        <p><strong>System Decision:</strong> ${decision}</p>
-        <p><strong>Threshold:</strong> ${threshold}%</p>
+        <div class="score ${decision.className}">${finalScore}%</div>
+        <div class="small">Overall match estimate</div>
+        <div class="meter"><div class="meter-fill" style="width:${finalScore}%"></div></div>
 
-        <h4>Reasoning</h4>
+        <div class="metrics">
+          <div class="metric">
+            <div class="label">Keyword Match</div>
+            <div class="value">${keywordPercent}%</div>
+          </div>
+          <div class="metric">
+            <div class="label">Coverage</div>
+            <div class="value">${coveragePercent}%</div>
+          </div>
+          <div class="metric">
+            <div class="label">Experience Fit</div>
+            <div class="value">${yearsPercent}%</div>
+          </div>
+        </div>
+
+        <h4>Decision Notes</h4>
         <ul>
           ${reasoning.map(item => `<li>${item}</li>`).join('')}
         </ul>
+      `;
 
-        <h4>Top Matched Keywords</h4>
-        <p>${matched.length ? matched.slice(0, 15).join(', ') : 'None clearly detected.'}</p>
+      detailsPanel.innerHTML = `
+        <div class="lists-grid">
+          <div class="list-card">
+            <h4>Top Matched Keywords</h4>
+            ${renderTags(matched.slice(0, 15), 'good')}
+          </div>
+          <div class="list-card">
+            <h4>Missing / Weak Keywords</h4>
+            ${renderTags(missing.slice(0, 15), 'missing')}
+          </div>
+        </div>
 
-        <h4>Top Missing Keywords</h4>
-        <p>${missing.length ? missing.slice(0, 15).join(', ') : 'No major missing keywords detected.'}</p>
-
-        <h4>Recommendation</h4>
-        <p>${nextStep}</p>
-
-        <p class="small">
-          Important: this is a transparent rules-based estimator, not an actual hiring predictor.
-          Real hiring decisions depend on interviews, competition, internal candidates, location, timing,
-          salary expectations, referrals, and many factors not visible in text alone.
-        </p>
+        <div class="list-card" style="margin-top:16px;">
+          <h4>Resume Improvement Suggestions</h4>
+          <ul>
+            ${suggestions.map(item => `<li>${item}</li>`).join('')}
+          </ul>
+        </div>
       `;
     }
 
@@ -396,10 +752,28 @@ Worked with Lenel access control and Avigilon camera systems.
 Strong incident response background.
 Advanced Excel reporting and dashboard tracking.
 Badge administration and physical security operations.
+Implemented reporting improvements that increased visibility for leadership.
       `.trim();
 
       document.getElementById('priorityKeywords').value = 'leadership, lenel, avigilon, incident response, excel';
+      hideFileChip();
+      analyzeFit();
+    }
+
+    function clearAllFields() {
+      document.getElementById('jobTitle').value = '';
+      document.getElementById('jobDescription').value = '';
+      document.getElementById('candidateName').value = '';
+      document.getElementById('candidateProfile').value = '';
+      document.getElementById('priorityKeywords').value = '';
+      document.getElementById('minThreshold').value = '40';
+      document.getElementById('summaryPanel').innerHTML = '<p class="small">Run the analysis to see the score, decision, and component breakdown.</p>';
+      document.getElementById('detailsPanel').innerHTML = '<p class="small">Matched skills, missing qualifications, and resume improvement suggestions will appear here.</p>';
+      resumeUpload.value = '';
+      hideFileChip();
     }
   </script>
+</body>
+</html>
 </body>
 </html>
