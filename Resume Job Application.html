@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Job Fit AI Robot</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --panel: #111827;
+      --card: #1f2937;
+      --text: #e5e7eb;
+      --muted: #94a3b8;
+      --accent: #22c55e;
+      --warn: #f59e0b;
+      --danger: #ef4444;
+      --border: #334155;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: linear-gradient(135deg, #0f172a, #111827 60%, #1e293b);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 24px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: 2rem;
+    }
+
+    .subtitle {
+      color: var(--muted);
+      margin-bottom: 24px;
+      line-height: 1.5;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    .card {
+      background: rgba(17, 24, 39, 0.9);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 12px 30px rgba(0,0,0,0.25);
+    }
+
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: bold;
+    }
+
+    textarea, input, select {
+      width: 100%;
+      background: #0b1220;
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px;
+      margin-bottom: 16px;
+      font-size: 14px;
+    }
+
+    textarea {
+      min-height: 180px;
+      resize: vertical;
+    }
+
+    button {
+      background: var(--accent);
+      color: #052e16;
+      border: none;
+      padding: 12px 18px;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: bold;
+      cursor: pointer;
+      margin-right: 10px;
+    }
+
+    button.secondary {
+      background: #334155;
+      color: var(--text);
+    }
+
+    .result-box {
+      margin-top: 16px;
+      padding: 16px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: #0b1220;
+    }
+
+    .score {
+      font-size: 2rem;
+      font-weight: bold;
+      margin: 8px 0;
+    }
+
+    .approved { color: var(--accent); }
+    .review { color: var(--warn); }
+    .denied { color: var(--danger); }
+
+    ul {
+      padding-left: 18px;
+      line-height: 1.6;
+    }
+
+    .pill {
+      display: inline-block;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: bold;
+      margin-bottom: 8px;
+    }
+
+    .pill.approved { background: rgba(34,197,94,0.15); }
+    .pill.review { background: rgba(245,158,11,0.15); }
+    .pill.denied { background: rgba(239,68,68,0.15); }
+
+    .small {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    @media (max-width: 900px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Job Fit AI Robot</h1>
+    <p class="subtitle">
+      This HTML tool compares a candidate profile against a job description, estimates a match percentage,
+      and auto-denies applications below 40% with reasons. It is a rules-based scoring engine, which is a safer
+      and more transparent starting point than pretending it is a true hiring AI model.
+    </p>
+
+    <div class="grid">
+      <div class="card">
+        <h2>Job Input</h2>
+
+        <label for="jobTitle">Job Title</label>
+        <input id="jobTitle" type="text" placeholder="Example: Security Operations Manager" />
+
+        <label for="jobDescription">Job Description / Requirements</label>
+        <textarea id="jobDescription" placeholder="Paste the full job posting here...&#10;&#10;Example:&#10;- 5+ years of security experience&#10;- Access control systems&#10;- Incident response&#10;- Microsoft Excel&#10;- Leadership experience"></textarea>
+
+        <label for="minThreshold">Auto-Deny Threshold</label>
+        <select id="minThreshold">
+          <option value="40" selected>40%</option>
+          <option value="50">50%</option>
+          <option value="60">60%</option>
+        </select>
+      </div>
+
+      <div class="card">
+        <h2>Candidate Input</h2>
+
+        <label for="candidateName">Candidate Name</label>
+        <input id="candidateName" type="text" placeholder="Example: Hayden Wisman" />
+
+        <label for="candidateProfile">Candidate Skills / Resume Summary</label>
+        <textarea id="candidateProfile" placeholder="Paste resume text, skill summary, or experience here...&#10;&#10;Example:&#10;- 10 years security management experience&#10;- Lenel access control&#10;- Avigilon CCTV&#10;- Excel reporting&#10;- Team leadership"></textarea>
+
+        <label for="priorityKeywords">Priority Keywords (comma-separated)</label>
+        <input id="priorityKeywords" type="text" placeholder="Example: leadership, lenel, incident response, excel" />
+
+        <button onclick="analyzeFit()">Analyze Application</button>
+        <button class="secondary" onclick="loadDemo()">Load Demo</button>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:20px;">
+      <h2>Decision Output</h2>
+      <div id="results" class="result-box">
+        <p class="small">Run the analysis to see the score, decision, matched skills, missing qualifications, and reasoning.</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function normalizeText(text) {
+      return text
+        .toLowerCase()
+        .replace(/[^a-z0-9\s\+\-]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+    }
+
+    function extractRequirementLines(jobDescription) {
+      return jobDescription
+        .split(/\n|\.|;/)
+        .map(line => line.trim())
+        .filter(line => line.length > 3);
+    }
+
+    function extractKeywords(text) {
+      const stopWords = new Set([
+        'the','and','for','with','that','this','from','have','will','your','you','our','are','all','not','but','job','role','must','can','able','into','about','more','less','than','year','years','experience','work','working','required','preferred','plus','using','use','strong','skills','skill','knowledge','ability','team','including','related','responsible','minimum'
+      ]);
+
+      const words = normalizeText(text).split(' ');
+      const freq = {};
+
+      words.forEach(word => {
+        if (word.length > 2 && !stopWords.has(word)) {
+          freq[word] = (freq[word] || 0) + 1;
+        }
+      });
+
+      return Object.entries(freq)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 30)
+        .map(entry => entry[0]);
+    }
+
+    function buildJobKeywords(jobDescription, priorityKeywords) {
+      const autoKeywords = extractKeywords(jobDescription);
+      const manualKeywords = priorityKeywords
+        .split(',')
+        .map(k => normalizeText(k))
+        .filter(Boolean);
+
+      return [...new Set([...manualKeywords, ...autoKeywords])];
+    }
+
+    function keywordExists(keyword, candidateText) {
+      const escaped = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const regex = new RegExp('\\b' + escaped + '\\b', 'i');
+      return regex.test(candidateText);
+    }
+
+    function estimateYearsMatch(jobDescription, candidateProfile) {
+      const jobYears = [...jobDescription.matchAll(/(\d+)\+?\s*years?/gi)].map(m => parseInt(m[1], 10));
+      const candidateYears = [...candidateProfile.matchAll(/(\d+)\+?\s*years?/gi)].map(m => parseInt(m[1], 10));
+
+      if (!jobYears.length) return { score: 1, note: 'No explicit years requirement found.' };
+      if (!candidateYears.length) return { score: 0, note: 'Candidate profile does not clearly show years of experience.' };
+
+      const required = Math.max(...jobYears);
+      const actual = Math.max(...candidateYears);
+      const ratio = Math.min(actual / required, 1);
+
+      return {
+        score: ratio,
+        note: `Required years: ${required}. Candidate years found: ${actual}.`
+      };
+    }
+
+    function analyzeFit() {
+      const jobTitle = document.getElementById('jobTitle').value.trim();
+      const jobDescription = document.getElementById('jobDescription').value.trim();
+      const candidateName = document.getElementById('candidateName').value.trim() || 'Candidate';
+      const candidateProfile = document.getElementById('candidateProfile').value.trim();
+      const priorityKeywords = document.getElementById('priorityKeywords').value.trim();
+      const threshold = Number(document.getElementById('minThreshold').value);
+      const results = document.getElementById('results');
+
+      if (!jobDescription || !candidateProfile) {
+        results.innerHTML = '<p class="denied"><strong>Please paste both a job description and candidate profile.</strong></p>';
+        return;
+      }
+
+      const normalizedCandidate = normalizeText(candidateProfile);
+      const jobKeywords = buildJobKeywords(jobDescription, priorityKeywords);
+      const requirementLines = extractRequirementLines(jobDescription);
+      const yearsMatch = estimateYearsMatch(jobDescription, candidateProfile);
+
+      const matched = [];
+      const missing = [];
+      let keywordScore = 0;
+
+      jobKeywords.forEach(keyword => {
+        if (keywordExists(keyword, normalizedCandidate)) {
+          matched.push(keyword);
+          keywordScore += priorityKeywords.toLowerCase().includes(keyword) ? 2 : 1;
+        } else {
+          missing.push(keyword);
+        }
+      });
+
+      const maxKeywordScore = jobKeywords.reduce((sum, keyword) => {
+        return sum + (priorityKeywords.toLowerCase().includes(keyword) ? 2 : 1);
+      }, 0) || 1;
+
+      const normalizedKeywordScore = keywordScore / maxKeywordScore;
+      const lineMatches = requirementLines.filter(line => {
+        const lineWords = extractKeywords(line).slice(0, 5);
+        return lineWords.some(word => keywordExists(word, normalizedCandidate));
+      }).length;
+      const requirementCoverage = requirementLines.length ? lineMatches / requirementLines.length : 0;
+
+      const finalScore = Math.round(((normalizedKeywordScore * 0.55) + (requirementCoverage * 0.20) + (yearsMatch.score * 0.25)) * 100);
+
+      let decision = 'AUTO-DENY';
+      let decisionClass = 'denied';
+      let reasoning = [];
+
+      if (finalScore >= 70) {
+        decision = 'STRONG MATCH';
+        decisionClass = 'approved';
+        reasoning.push('The profile aligns well with the job requirements and priority keywords.');
+      } else if (finalScore >= threshold) {
+        decision = 'REVIEW MANUALLY';
+        decisionClass = 'review';
+        reasoning.push('The candidate meets enough qualifications to justify human review.');
+      } else {
+        decision = 'AUTO-DENY';
+        decisionClass = 'denied';
+        reasoning.push(`The application scored below the ${threshold}% threshold.`);
+      }
+
+      if (matched.length) {
+        reasoning.push(`Matched ${matched.length} job keyword(s): ${matched.slice(0, 10).join(', ')}${matched.length > 10 ? '...' : ''}.`);
+      }
+
+      if (missing.length) {
+        reasoning.push(`Missing or unclear qualifications: ${missing.slice(0, 10).join(', ')}${missing.length > 10 ? '...' : ''}.`);
+      }
+
+      reasoning.push(yearsMatch.note);
+      reasoning.push(`Requirement coverage estimate: ${Math.round(requirementCoverage * 100)}%.`);
+
+      const nextStep = finalScore < threshold
+        ? 'Recommendation: do not apply yet. Improve resume alignment, add missing skills, or target a closer-fit role.'
+        : 'Recommendation: proceed with the application and tailor the resume to the matched keywords.';
+
+      results.innerHTML = `
+        <span class="pill ${decisionClass}">${decision}</span>
+        <h3>${candidateName}${jobTitle ? ' vs. ' + jobTitle : ''}</h3>
+        <div class="score ${decisionClass}">${finalScore}% Match Probability</div>
+        <p><strong>System Decision:</strong> ${decision}</p>
+        <p><strong>Threshold:</strong> ${threshold}%</p>
+
+        <h4>Reasoning</h4>
+        <ul>
+          ${reasoning.map(item => `<li>${item}</li>`).join('')}
+        </ul>
+
+        <h4>Top Matched Keywords</h4>
+        <p>${matched.length ? matched.slice(0, 15).join(', ') : 'None clearly detected.'}</p>
+
+        <h4>Top Missing Keywords</h4>
+        <p>${missing.length ? missing.slice(0, 15).join(', ') : 'No major missing keywords detected.'}</p>
+
+        <h4>Recommendation</h4>
+        <p>${nextStep}</p>
+
+        <p class="small">
+          Important: this is a transparent rules-based estimator, not an actual hiring predictor.
+          Real hiring decisions depend on interviews, competition, internal candidates, location, timing,
+          salary expectations, referrals, and many factors not visible in text alone.
+        </p>
+      `;
+    }
+
+    function loadDemo() {
+      document.getElementById('jobTitle').value = 'Security Operations Manager';
+      document.getElementById('jobDescription').value = `
+Security Operations Manager Requirements:
+- 5+ years of security experience
+- 2+ years leadership experience
+- Access control systems
+- CCTV / camera systems
+- Incident response
+- Microsoft Excel and reporting
+- Strong communication
+- Corporate security environment
+- Badge access administration
+- Preferred: Lenel, Avigilon, risk assessments
+      `.trim();
+
+      document.getElementById('candidateName').value = 'Sample Candidate';
+      document.getElementById('candidateProfile').value = `
+10 years of corporate security experience.
+3 years leadership experience supervising officers.
+Worked with Lenel access control and Avigilon camera systems.
+Strong incident response background.
+Advanced Excel reporting and dashboard tracking.
+Badge administration and physical security operations.
+      `.trim();
+
+      document.getElementById('priorityKeywords').value = 'leadership, lenel, avigilon, incident response, excel';
+    }
+  </script>
+</body>
+</html>
